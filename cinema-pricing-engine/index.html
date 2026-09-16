@@ -1,65 +1,570 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Cinema Pricing Engine</title>
-    <link rel="stylesheet" href="style.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        select,
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .member-label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            background: #222;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        .bill-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .total {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+
+        .success {
+            margin-top: 15px;
+            padding: 12px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            color: #2e7d32;
+        }
+
+        .error {
+            margin-top: 15px;
+            padding: 12px;
+            background: #ffebee;
+            border-radius: 6px;
+            color: #c62828;
+        }
+
+        .price-list {
+            margin-top: 15px;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: #f7f7f7;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+
+        .note {
+            color: #666;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 
 <body>
 
 <div class="container">
+
     <h1>🎬 Cinema Pricing Engine</h1>
 
+    <!-- BOOKING -->
     <div class="card">
+
         <h2>Book Tickets</h2>
 
-        <label>Seat Tier</label>
+        <label for="tier">Seat Tier</label>
+
         <select id="tier">
             <option value="silver">Silver - ₹150</option>
             <option value="gold">Gold - ₹250</option>
             <option value="recliner">Recliner - ₹500</option>
         </select>
 
-        <label>Quantity</label>
-        <input type="number" id="quantity" value="1" min="1">
+        <label for="quantity">Quantity</label>
 
-        <label>
+        <input
+            type="number"
+            id="quantity"
+            value="1"
+            min="1"
+            max="10"
+        >
+
+        <label class="member-label">
             <input type="checkbox" id="member">
             Member
         </label>
 
-        <button onclick="calculate()">Calculate Bill</button>
+        <button onclick="calculate()">
+            Calculate Bill
+        </button>
+
     </div>
 
+
+    <!-- BILL -->
     <div class="card">
+
         <h2>Bill</h2>
 
         <div id="bill">
             <p>Enter booking details.</p>
         </div>
+
     </div>
 
+
+    <!-- IMPORT PRICES -->
     <div class="card">
+
         <h2>Import Price List</h2>
 
-        <textarea id="priceInput" rows="8">
-Silver, ₹150
+        <textarea id="priceInput" rows="8">Silver, ₹150
 silver, 150
 GOLD, ₹250.50
 Gold, 250
 Recliner, ₹1,200
 VIP, -500
 Balcony, abc
-Platinum,
-        </textarea>
+Platinum,</textarea>
 
-        <button onclick="importPrices()">Import Prices</button>
+        <button onclick="importPrices()">
+            Import Prices
+        </button>
 
         <div id="importResult"></div>
+
     </div>
+
 </div>
 
-<script src="script.js"></script>
+
+<script>
+
+    // Default prices
+    let prices = {
+        silver: 150,
+        gold: 250,
+        recliner: 500
+    };
+
+
+    // Pricing configuration
+    const FESTIVAL_DISCOUNT = 50;
+
+    const MEMBER_DISCOUNT_PERCENT = 10;
+
+    const MEMBER_DISCOUNT_CAP = 100;
+
+    const CONVENIENCE_FEE = 20;
+
+    const GST_PERCENT = 18;
+
+
+    // Calculate booking
+    function calculate() {
+
+        const tier = document.getElementById("tier").value;
+
+        const quantity = parseInt(
+            document.getElementById("quantity").value
+        );
+
+        const member = document.getElementById("member").checked;
+
+
+        // Validation
+        if (!quantity || quantity < 1) {
+
+            showError(
+                "Please enter a valid ticket quantity."
+            );
+
+            return;
+        }
+
+
+        if (!prices[tier]) {
+
+            showError(
+                "Selected seat tier is not available."
+            );
+
+            return;
+        }
+
+
+        // Base ticket price
+        const basePrice = prices[tier] * quantity;
+
+
+        // Festival discount
+        const festivalDiscount = Math.min(
+            FESTIVAL_DISCOUNT,
+            basePrice
+        );
+
+
+        const afterFestival =
+            basePrice - festivalDiscount;
+
+
+        // Member discount
+        let memberDiscount = 0;
+
+        if (member) {
+
+            memberDiscount =
+                afterFestival *
+                MEMBER_DISCOUNT_PERCENT /
+                100;
+
+            memberDiscount =
+                Math.min(
+                    memberDiscount,
+                    MEMBER_DISCOUNT_CAP
+                );
+        }
+
+
+        // Price after discounts
+        const discountedPrice =
+            afterFestival - memberDiscount;
+
+
+        // Convenience fee
+        const convenienceFee =
+            CONVENIENCE_FEE * quantity;
+
+
+        // GST
+        const taxableAmount =
+            discountedPrice + convenienceFee;
+
+        const gst =
+            taxableAmount *
+            GST_PERCENT /
+            100;
+
+
+        // Final amount
+        const total =
+            taxableAmount + gst;
+
+
+        // Display bill
+        document.getElementById("bill").innerHTML = `
+
+            <div class="bill-row">
+                <span>Seat Tier</span>
+                <strong>
+                    ${capitalize(tier)}
+                </strong>
+            </div>
+
+            <div class="bill-row">
+                <span>Quantity</span>
+                <strong>${quantity}</strong>
+            </div>
+
+            <div class="bill-row">
+                <span>Base Price</span>
+                <strong>₹${basePrice.toFixed(2)}</strong>
+            </div>
+
+            <div class="bill-row">
+                <span>Festival Discount</span>
+                <strong>- ₹${festivalDiscount.toFixed(2)}</strong>
+            </div>
+
+            <div class="bill-row">
+                <span>Member Discount</span>
+                <strong>- ₹${memberDiscount.toFixed(2)}</strong>
+            </div>
+
+            <div class="bill-row">
+                <span>Convenience Fee</span>
+                <strong>₹${convenienceFee.toFixed(2)}</strong>
+            </div>
+
+            <div class="bill-row">
+                <span>GST (${GST_PERCENT}%)</span>
+                <strong>₹${gst.toFixed(2)}</strong>
+            </div>
+
+            <div class="bill-row total">
+                <span>Total</span>
+                <strong>₹${total.toFixed(2)}</strong>
+            </div>
+
+        `;
+    }
+
+
+    // Import prices
+    function importPrices() {
+
+        const input =
+            document.getElementById("priceInput").value;
+
+        const lines =
+            input.split("\n");
+
+        const imported = {};
+
+        const errors = [];
+
+
+        lines.forEach((line, index) => {
+
+            line = line.trim();
+
+            if (!line) {
+                return;
+            }
+
+
+            const parts =
+                line.split(",");
+
+
+            if (parts.length !== 2) {
+
+                errors.push(
+                    `Line ${index + 1}: Invalid format`
+                );
+
+                return;
+            }
+
+
+            const name =
+                parts[0].trim().toLowerCase();
+
+
+            let priceText =
+                parts[1].trim();
+
+
+            // Remove ₹
+            priceText =
+                priceText.replace("₹", "");
+
+
+            // Remove commas from price
+            priceText =
+                priceText.replace(/,/g, "");
+
+
+            const price =
+                Number(priceText);
+
+
+            // Validate name
+            if (!name) {
+
+                errors.push(
+                    `Line ${index + 1}: Missing tier name`
+                );
+
+                return;
+            }
+
+
+            // Validate price
+            if (
+                priceText === "" ||
+                isNaN(price) ||
+                price <= 0
+            ) {
+
+                errors.push(
+                    `Line ${index + 1}: Invalid price`
+                );
+
+                return;
+            }
+
+
+            imported[name] = price;
+
+        });
+
+
+        // Update prices
+        Object.assign(prices, imported);
+
+
+        let result = "";
+
+
+        if (Object.keys(imported).length > 0) {
+
+            result += `
+                <div class="success">
+                    Successfully imported
+                    ${Object.keys(imported).length}
+                    price(s).
+                </div>
+            `;
+
+            result += `
+                <div class="price-list">
+            `;
+
+
+            Object.entries(imported).forEach(
+                ([name, price]) => {
+
+                    result += `
+                        <div class="price-item">
+                            <span>
+                                ${capitalize(name)}
+                            </span>
+
+                            <strong>
+                                ₹${price.toFixed(2)}
+                            </strong>
+                        </div>
+                    `;
+
+                }
+            );
+
+
+            result += `</div>`;
+        }
+
+
+        if (errors.length > 0) {
+
+            result += `
+                <div class="error">
+                    <strong>Errors:</strong>
+                    <ul>
+            `;
+
+
+            errors.forEach(error => {
+
+                result += `
+                    <li>${error}</li>
+                `;
+
+            });
+
+
+            result += `
+                    </ul>
+                </div>
+            `;
+        }
+
+
+        document.getElementById(
+            "importResult"
+        ).innerHTML = result;
+
+    }
+
+
+    // Capitalize text
+    function capitalize(text) {
+
+        return text.charAt(0).toUpperCase()
+            + text.slice(1);
+
+    }
+
+
+    // Show error
+    function showError(message) {
+
+        document.getElementById("bill").innerHTML = `
+
+            <div class="error">
+                ${message}
+            </div>
+
+        `;
+
+    }
+
+</script>
 
 </body>
 </html>

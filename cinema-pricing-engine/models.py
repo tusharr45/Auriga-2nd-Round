@@ -5,7 +5,6 @@ from database import Base
 
 class Cinema(Base):
     __tablename__ = "cinemas"
-
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     location = Column(String, nullable=False)
