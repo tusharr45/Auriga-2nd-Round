@@ -1,3 +1,11 @@
+## ROUND 2  ·  BUILD ROUND
+Friday night at the multiplex
+The multiplex booking counter keeps mis-pricing tickets and the queue is getting angry. Seats come in tiers — Silver, Gold, Recliner — at different prices, and by showtime some tiers sell out and shouldn’t be bookable. There are offers on: a flat festival discount and a percentage off for members (capped). Every booking then adds a small per-ticket convenience fee and GST on top, and it all has to total to the exact paisa. Customers keep demanding a clear line-by-line breakup of the bill.
+Build a pricing engine the counter can trust.
+(The messy real-world money rules are the point — handle each correctly, and build it for any cinema counter, not one show. Get a plain booking total right first, then layer on the offers, the fee and the tax.)
+The Twist
+Your solution must also import a messy seat-class price list — with duplicate names (in different cases), prices in inconsistent formats, blank values, and negative prices. Clean it into a correct price list and report what was imported, de-duplicated, and rejected.
+
 # Cinema Pricing Engine
 A FastAPI-based cinema ticket booking and pricing engine.
 The application manages cinemas, shows, seat tiers, bookings, and configurable pricing rules. It calculates the final ticket amount by applying discounts, convenience fees, and GST.
@@ -33,36 +41,3 @@ The application manages cinemas, shows, seat tiers, bookings, and configurable p
 - Swagger / OpenAPI
 
 ---
-
-## Project Structure
-cinema-pricing-engine/
-│
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── database.py
-│   ├── schemas.py
-│   │
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── cinema.py
-│   │   ├── show.py
-│   │   ├── seat_tier.py
-│   │   ├── booking.py
-│   │   └── pricing.py
-│   │
-│   ├── routes/
-│   │   ├── __init__.py
-│   │   ├── cinemas.py
-│   │   ├── shows.py
-│   │   ├── bookings.py
-│   │   └── pricing.py
-│   │
-│   └── services/
-│       └── pricing_service.py
-│
-├── cinema.db
-├── requirements.txt
-├── README.md
-├── REASONING.md
-└── AI_LOGS.md
